@@ -1,47 +1,64 @@
-import { createServer } from 'node:https';
-import { createServer as createHTTP } from 'node:http';
-import { createBareServer } from '@tomphttp/bare-server-node';
-import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
-import express from 'express';
-import * as fs from 'fs';
-import * as process from 'process';
-const bare = createBareServer('/bare/');
-const app = express();
+/** @type { HTMLSelectElement } */ const themeForm      = document.getElementById('theme');
+/** @type { HTMLDivElement } */    const settingsModal  = document.getElementById('settingsModal');
+/** @type { HTMLDivElement } */    const infoModal      = document.getElementById('infoModal');
+/** @type { HTMLInputElement } */  const input          = document.getElementById('searchbar');
+const modalCover = document.getElementById('modalCover');
+const root = document.querySelector(':root');
 
-app.use(express.static('static'));
-app.use('/uv/', express.static('static/js/uv/'));
-const httpServer = createHTTP()
-const server = createServer({
-    key: fs.readFileSync(process.env.KEY),
-    cert: fs.readFileSync(process.env.CERT)
-});
+async function search() {
+    const regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/;
+    const serviceWorker = await window.navigator.serviceWorker.register('./sw.js', { scope: __uv$config.prefix });
 
-server.on('request', (req, res) => {
-    if (bare.shouldRoute(req)) {
-        bare.routeRequest(req, res);
+    let url = input.value.trim();
+    
+    if (regex.test(url)) {
+        url = 'http://' + url;
     } else {
-        app(req, res);
+        // This doesn't make sense but okay :sob:
+        url = 'https://www.google.com/search?q=' + url;
     }
-});
 
-server.on('upgrade', (req, socket, head) => {
-    if (bare.shouldRoute(req)) {
-        bare.routeUpgrade(req, socket, head);
-    } else {
-        socket.end();
-    }
-});
+    window.location.href = __uv$config.prefix + __uv$config.encodeUrl(url);
+}
 
-httpServer.on('request', (req,res) => {
-    app(req, res);
-    // res.writeHead(200)
-    // res.end("<h1>ERROR: This server only supports https<h1/>")
-})
+function themeSelectChange() {
+    const t = themeForm.selectedIndex;
+    console.log(t);
+}
 
-httpServer.listen({
-    port: 80,
-});
+function openSettingsModal() {
+    settingsModal.classList.remove('hidden');
+    modalCover.classList.remove('hidden');
+}
 
-server.listen({
-    port: 443,
-});
+function closeSettingsModal() {
+    settingsModal.classList.add('hidden');
+    modalCover.classList.add('hidden');
+}
+
+function openInfoModal() {
+    infoModal.classList.remove('hidden');
+    modalCover.classList.remove('hidden');
+}
+
+function closeInfoModal() {
+    infoModal.classList.add('hidden');
+    modalCover.classList.add('hidden');
+}
+
+/* Add this CSS to make the button black */
+.modalButton {
+    background-color: #000; /* Black background color */
+    color: #fff; /* White text color */
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Add a hover effect if needed */
+.modalButton:hover {
+    background-color: #333; /* Darker shade of black on hover */
+}
+
+// NOTE: For Z-index in CSS, modals should always have a z-index above 5, and everything else under 5
